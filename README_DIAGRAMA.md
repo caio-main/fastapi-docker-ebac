@@ -1,23 +1,23 @@
-# Explicação do Diagrama de Arquitetura Docker + FastAPI
+# Explicação do Diagrama de Arquitetura Docker + FastAPI (Versão Corrigida)
 
-Este documento descreve as relações e o fluxo de dados entre os componentes do nosso projeto utilizando Docker e Docker Compose, servindo como guia explicativo para o diagrama em anexo.
-
----
-
-## 1. Descrição dos Componentes e suas Relações
-
-* **main.py:** Contém o código-fonte bruto da nossa aplicação FastAPI. Ele define as rotas e a lógica de funcionamento do sistema.
-* **Dockerfile:** É a nossa "receita de bolo". Ele lê o `main.py` e suas dependências para instruir o Docker Engine sobre como construir o ambiente ideal para o app rodar de forma isolada.
-* **Imagem Docker:** É o resultado gerado após a execução do comando `docker build` no Dockerfile. Um artefato estático, imutável, que empacota o Python, as bibliotecas e o nosso código.
-* **docker-compose.yml:** O maestro do sistema. Ele define as regras de como a Imagem Docker se tornará um contêiner ativo, gerenciando portas de rede, variáveis de ambiente e volumes sem precisarmos digitar comandos longos no terminal.
-* **Container em Execução:** A instância real, viva e isolada da nossa Imagem Docker rodando na memória RAM da máquina.
-* **Porta Exposta / Mapeada:** A ponte de comunicação. O contêiner roda internamente na porta `8000`, e o Docker Compose mapeia essa porta para a porta `8000` da nossa máquina física (Host).
+Este documento descreve revisões na arquitetura e no fluxo de dados entre os componentes do projeto utilizando Docker e Docker Compose, corrigindo os pontos de relacionamento de conceitos e mapeamento de rede.
 
 ---
 
-## 2. Fluxo de Requisições (Como os dados trafegam)
+## 1. Ajustes Conceituais de Componentes
 
-1. O **Cliente Externo** (Navegador ou Insomnia) faz uma requisição acessando a URL `http://localhost:8000`.
-2. A requisição bate na **Máquina Host**, que identifica que a porta `8000` está mapeada para um serviço do Docker.
-3. O Docker redireciona esse tráfego para dentro do **Container em Execução**, entregando a requisição na porta interna do servidor Uvicorn/FastAPI.
-4. O código no **main.py** processa a requisição e faz o caminho inverso para devolver a resposta de sucesso ao usuário.
+* **main.py e Dockerfile:** O código-fonte (`main.py`) é estruturado pelo `Dockerfile`, que define os passos de instalação e execução.
+* **Imagem Docker:** Gerada a partir do `Dockerfile`. É um artefato estático e imutável.
+* **docker-compose.yml (Orquestrador):** Corrigindo o fluxo conceitual, o Compose não é gerado pela imagem. Ele **consome e utiliza a Imagem Docker** (ou gerencia seu build) para orquestrar e subir os serviços automaticamente com o comando `docker compose up`.
+* **Container em Execução:** A instância isolada e ativa da aplicação FastAPI na memória, instanciada diretamente pela ação do Docker Compose.
+
+---
+
+## 2. Fluxo de Portas e Requisições (Mapeamento Host x Container)
+
+Para tornar explícito o isolamento de redes e o mapeamento de portas (`- 8000:8000`), o tráfego foi mapeado visualmente em camadas distintas:
+
+1. **Origem:** O **Cliente Externo** faz uma requisição HTTP via navegador ou Insomnia disparando para `http://localhost:8000`.
+2. **Máquina Host:** A requisição chega primeiro na porta física **8000 da Máquina Host** (computador local).
+3. **Mapeamento de Porta (Docker Net):** O Docker intercepta essa entrada na porta do Host e, seguindo as regras do `docker-compose.yml`, redireciona o tráfego para a **Porta Interna 8000 do Container**.
+4. **Destino:** A aplicação FastAPI recebe o dado na porta interna do container, processa e devolve a resposta pelo mesmo caminho.
